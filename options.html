@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>YTM Loudness Normalizer Options</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; margin: 24px; max-width: 500px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; }
+    input { width: 120px; padding: 6px; }
+    button { margin-top: 12px; padding: 6px 12px; }
+    .hint { color: #555; margin-top: 8px; }
+    .status { margin-top: 10px; min-height: 1.2em; }
+  </style>
+</head>
+<body>
+<h1>YTM Loudness Normalizer</h1>
+
+<label for="targetDb">Target loudness (dB)</label>
+<input id="targetDb" type="number" step="0.1" min="-60" max="10">
+<div class="hint">Recommended range: -20 to -10. Default is -14.</div>
+
+<button id="saveBtn" type="button">Save</button>
+<div id="status" class="status"></div>
+
+<script src="options.js"></script>
+</body>
+</html>

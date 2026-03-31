@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "YTM Loudness Normalizer",
+  "version": "0.1",
+  "description": "Normalize YouTube Music loudness to a custom target.",
+
+  "permissions": ["storage"],
+
+  "host_permissions": [
+    "https://music.youtube.com/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["https://music.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["inject.js"],
+      "matches": ["https://music.youtube.com/*"]
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
+}
