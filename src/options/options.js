@@ -1,51 +1,94 @@
-const ext = typeof browser !== "undefined" ? browser : chrome;
+/**
+ * Options page for YTM Loudness Normalizer
+ */
 
-const DEFAULT_TARGET_DB = -14;
-const MIN_LOUDNESS_DB = -60;
-const MAX_LOUDNESS_DB = 10;
+const BROWSER = typeof browser !== "undefined" ? browser : chrome;
+const STORAGE_KEY = "ytm_target_db";
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+const targetDbSlider = document.getElementById("targetDb");
+const targetDbNumber = document.getElementById("targetDbNumber");
+const statusEl = document.getElementById("status");
+const saveBtn = document.getElementById("saveBtn");
 
-async function loadOptions() {
-  const input = document.getElementById("targetDb");
+/**
+ * Load saved target dB value
+ */
+async function loadSettings() {
   try {
-    const data = await ext.storage.local.get("ytm_target_db");
-    const raw = Number(data.ytm_target_db);
-    const value = Number.isFinite(raw)
-      ? clamp(raw, MIN_LOUDNESS_DB, MAX_LOUDNESS_DB)
-      : DEFAULT_TARGET_DB;
-    input.value = String(value);
+    const data = await BROWSER.storage.local.get(STORAGE_KEY);
+    const value = data[STORAGE_KEY] || "-14";
+    targetDbSlider.value = value;
+    targetDbNumber.value = value;
   } catch (err) {
-    input.value = String(DEFAULT_TARGET_DB);
+    showStatus("Failed to load settings", "error");
   }
 }
 
-async function saveOptions() {
-  const input = document.getElementById("targetDb");
-  const status = document.getElementById("status");
+/**
+ * Clamp and validate dB value
+ */
+function normalizeValue(raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(-60, Math.min(-7, n));
+}
 
-  const raw = Number(input.value);
-  const value = Number.isFinite(raw)
-    ? clamp(raw, MIN_LOUDNESS_DB, MAX_LOUDNESS_DB)
-    : DEFAULT_TARGET_DB;
-
-  input.value = String(value);
-
+/**
+ * Save target dB value to storage
+ */
+async function saveSettings(value) {
   try {
-    await ext.storage.local.set({ ytm_target_db: value });
-    status.textContent = "Saved.";
-    setTimeout(() => {
-      status.textContent = "";
-    }, 1200);
+    await BROWSER.storage.local.set({ [STORAGE_KEY]: value });
+    showStatus("Saved successfully!", "success");
   } catch (err) {
-    status.textContent = "Failed to save.";
+    showStatus("Failed to save settings", "error");
   }
 }
 
-document.getElementById("saveBtn").addEventListener("click", () => {
-  void saveOptions();
+/**
+ * Show status message
+ */
+function showStatus(message, type) {
+  statusEl.textContent = message;
+  statusEl.className = `status ${type}`;
+
+  setTimeout(() => {
+    statusEl.className = "status";
+  }, 3000);
+}
+
+function normalizeAndValidate() {
+  const normalized = normalizeValue(targetDbNumber.value);
+  if (normalized === null) {
+    showStatus("Please enter a valid number.", "error");
+    return;
+  }
+  targetDbNumber.value = String(normalized);
+  targetDbSlider.value = String(normalized);
+
+  return normalized;
+}
+
+/**
+ * Sync slider and number input
+ */
+targetDbSlider.addEventListener("input", (e) => {
+  targetDbNumber.value = e.target.value;
 });
 
-void loadOptions();
+targetDbNumber.addEventListener("input", (e) => {
+  targetDbSlider.value = e.target.value;
+});
+
+targetDbNumber.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter") {
+    await saveSettings(String(normalizeAndValidate()));
+  }
+});
+
+saveBtn.addEventListener("click", async () => {
+  await saveSettings(String(normalizeAndValidate()));
+});
+
+// Initialize
+loadSettings();
