@@ -1,7 +1,7 @@
 const ext = typeof browser !== "undefined" ? browser : chrome;
 
 const script = document.createElement('script');
-script.src = ext.runtime.getURL('inject.js');
+script.src = ext.runtime.getURL('content/inject.js');
 script.onload = () => script.remove();
 script.onerror = () => console.error("[YTM] inject.js failed to load");
 (document.head || document.documentElement).appendChild(script);
