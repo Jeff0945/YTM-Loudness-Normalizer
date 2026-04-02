@@ -34,6 +34,8 @@ const targetDbNumber = document.getElementById("targetDbNumber");
 const statusEl = document.getElementById("status");
 const saveBtn = document.getElementById("saveBtn");
 
+let statusTimer = null;
+
 /**
  * Show status message
  */
@@ -41,8 +43,13 @@ function showStatus(message, type) {
   statusEl.textContent = message;
   statusEl.className = `status ${type}`;
 
-  setTimeout(() => {
+  if (statusTimer) {
+    clearTimeout(statusTimer);
+  }
+
+  statusTimer = setTimeout(() => {
     statusEl.className = "status";
+    statusTimer = null;
   }, 2000);
 }
 
