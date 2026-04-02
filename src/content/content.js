@@ -36,13 +36,6 @@ let videoObserver = null;
 // Helper Functions
 // ============================================================================
 
-function resetForNewSong() {
-  lastSnapshot = null;
-  audio.lastLoudnessDb = null;
-  stats.lastSnapshot = null;
-  stats.update(null, userTargetDb, normalizationEnabled);
-}
-
 function handleVideoMaybeChanged() {
   const video = document.querySelector("video");
   if (!video) return;
@@ -57,7 +50,10 @@ function handleVideoMaybeChanged() {
       if (!src || src === lastVideoSrc) return;
 
       lastVideoSrc = src;
-      resetForNewSong();
+
+      if (lastSnapshot && audio.isUnlocked) {
+        audio.applyGain(normalizationEnabled ? lastSnapshot.gainLinear : 1);
+      }
     };
 
     // Store handler on the element so we can avoid duplicate listeners
@@ -79,7 +75,10 @@ function handleVideoMaybeChanged() {
   if (!src || src === lastVideoSrc) return;
 
   lastVideoSrc = src;
-  resetForNewSong();
+
+  if (lastSnapshot && audio.isUnlocked) {
+    audio.applyGain(normalizationEnabled ? lastSnapshot.gainLinear : 1);
+  }
 }
 
 function setupVideoWatcher() {
