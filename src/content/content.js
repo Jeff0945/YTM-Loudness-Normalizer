@@ -173,12 +173,12 @@ async function handleLoudnessMessage(loudnessDb) {
  * Handle storage changes from options page
  */
 function setupStorageListeners() {
-  MessageHandler.onStorageChange((targetDb) => {
+  MessageHandler.onStorageChange(async (targetDb) => {
     userTargetDb = targetDb;
     log("Target dB updated:", userTargetDb);
 
     // Reapply normalization immediately if audio is available
-    reapplyNormalization();
+    await reapplyNormalization();
 
     // Update stats display
     if (lastSnapshot) {
