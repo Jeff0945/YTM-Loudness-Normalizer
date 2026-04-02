@@ -61,28 +61,30 @@ export class StatsOverlay {
   /**
    * Update stats display with current snapshot
    */
-  update(snapshot, userTargetDb) {
+  update(snapshot, userTargetDb, enabled) {
     const container = this.findContainer();
     if (!container) return;
 
     const rows = this.ensureAllRows(container);
     this.lastSnapshot = snapshot;
 
-    if (!snapshot || !Number.isFinite(snapshot.postYtDb)) {
-      rows.status.value.textContent = "Waiting for loudness data...";
+    const hasLoudness = Boolean(snapshot && Number.isFinite(snapshot.postYtDb));
+
+    if (!hasLoudness) {
+      rows.status.value.textContent = enabled ? "Waiting for loudness data..." : "Disabled";
       rows.afterYt.value.textContent = "-- dB";
       rows.target.value.textContent = `${formatDb(userTargetDb)} dB`;
-      rows.gain.value.textContent = "--";
+      rows.gain.value.textContent = enabled ? "--" : "100% (0.0 dB)";
       return;
     }
 
     rows.divider.value.textContent = "";
-    rows.status.value.textContent = "Enabled";
+    rows.status.value.textContent = enabled ? "Enabled" : "Disabled";
     rows.afterYt.value.textContent = `${formatDb(snapshot.postYtDb)} dB`;
     rows.target.value.textContent = `${formatDb(snapshot.targetDb)} dB`;
-    rows.gain.value.textContent = `${formatGain(snapshot.gainLinear)}% (${formatDb(
-      snapshot.gainDb
-    )} dB)`;
+    rows.gain.value.textContent = enabled
+      ? `${formatGain(snapshot.gainLinear)}% (${formatDb(snapshot.gainDb)} dB)`
+      : "100% (0.0 dB)";
   }
 
   /**

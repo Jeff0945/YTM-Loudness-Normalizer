@@ -23,7 +23,9 @@ script.onerror = () => error("inject.js failed to load");
 
 const audio = new AudioNormalizer();
 const stats = new StatsOverlay();
-let userTargetDb = -14; // will be loaded from storage
+
+let normalizationEnabled = true;
+let userTargetDb = -14;
 let lastSnapshot = null;
 
 let lastVideoSrc = "";
@@ -38,7 +40,7 @@ function resetForNewSong() {
   lastSnapshot = null;
   audio.lastLoudnessDb = null;
   stats.lastSnapshot = null;
-  stats.update(null, userTargetDb);
+  stats.update(null, userTargetDb, normalizationEnabled);
 }
 
 function handleVideoMaybeChanged() {
@@ -114,8 +116,14 @@ async function init() {
   log("Initializing...");
 
   // Load persisted storage
-  userTargetDb = await MessageHandler.loadUserTargetDb();
-  log("Target dB loaded:", userTargetDb);
+  const settings = await MessageHandler.loadUserSettings();
+  normalizationEnabled = settings.enabled;
+  userTargetDb = settings.targetDb;
+  log("Settings loaded:", {
+    enabled: normalizationEnabled,
+    targetDb: userTargetDb,
+    preset: settings.preset,
+  });
 
   setupMessageListeners();
   setupStorageListeners();
@@ -147,7 +155,7 @@ async function handleLoudnessMessage(loudnessDb) {
 
   const snapshot = audio.computeNormalization(loudnessDb, userTargetDb);
   lastSnapshot = snapshot;
-  stats.update(snapshot, userTargetDb);
+  stats.update(snapshot, userTargetDb, normalizationEnabled);
 
   // If audio isn't ready, wait for a gesture to unlock it
   if (!audio.isUnlocked) return;
@@ -159,7 +167,7 @@ async function handleLoudnessMessage(loudnessDb) {
     const wired = await audio.wireVideo(video);
     if (!wired) return;
 
-    audio.applyGain(snapshot.gainLinear);
+    audio.applyGain(normalizationEnabled ? snapshot.gainLinear : 1);
   } catch (err) {
     error("Failed to apply gain:", err.message);
   }
@@ -173,16 +181,24 @@ async function handleLoudnessMessage(loudnessDb) {
  * Handle storage changes from options page
  */
 function setupStorageListeners() {
-  MessageHandler.onStorageChange(async (targetDb) => {
-    userTargetDb = targetDb;
-    log("Target dB updated:", userTargetDb);
+  MessageHandler.onStorageChange(async (settings) => {
+    normalizationEnabled = settings.enabled;
+    userTargetDb = settings.targetDb;
+
+    log("Settings updated:", {
+      enabled: normalizationEnabled,
+      targetDb: userTargetDb,
+      preset: settings.preset,
+    });
 
     // Reapply normalization immediately if audio is available
     await reapplyNormalization();
 
     // Update stats display
     if (lastSnapshot) {
-      stats.update(lastSnapshot, userTargetDb);
+      stats.update(lastSnapshot, userTargetDb, normalizationEnabled);
+    } else {
+      stats.update(null, userTargetDb, normalizationEnabled);
     }
   });
 }
@@ -199,6 +215,13 @@ async function reapplyNormalization() {
   try {
     const wired = await audio.wireVideo(video);
     if (!wired) return;
+
+    if (!normalizationEnabled) {
+      audio.applyGain(1);
+      return;
+    }
+
+    if (!Number.isFinite(audio.lastLoudnessDb)) return;
 
     const snapshot = audio.computeNormalization(audio.lastLoudnessDb, userTargetDb);
     lastSnapshot = snapshot;
@@ -229,17 +252,18 @@ async function handleAudioUnlock() {
     const unlocked = await audio.unlock();
     if (!unlocked) return;
 
-    // Only wire video if we have loudness data
-    if (!Number.isFinite(audio.lastLoudnessDb)) {
-      requestLastLoudness();
-      return;
-    }
-
     const video = document.querySelector("video");
     if (!video || !video.currentSrc) return;
 
     const wired = await audio.wireVideo(video);
     if (!wired) return;
+
+    if (!normalizationEnabled) {
+      audio.applyGain(1);
+      return;
+    }
+
+    if (!Number.isFinite(audio.lastLoudnessDb)) return;
 
     const snapshot = audio.computeNormalization(audio.lastLoudnessDb, userTargetDb);
     lastSnapshot = snapshot;
@@ -259,14 +283,16 @@ async function handleAudioUnlock() {
 function setupStatsObserver() {
   stats.observeContainer(() => {
     if (lastSnapshot) {
-      stats.update(lastSnapshot, userTargetDb);
+      stats.update(lastSnapshot, userTargetDb, normalizationEnabled);
+    } else {
+      stats.update(null, userTargetDb, normalizationEnabled);
     }
   });
 
   // Initial attempt to display stats if container already exists
   if (lastSnapshot) {
     stats.scheduleUpdate(() => {
-      stats.update(lastSnapshot, userTargetDb);
+      stats.update(lastSnapshot, userTargetDb, normalizationEnabled);
     });
   }
 }

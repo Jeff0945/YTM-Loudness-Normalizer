@@ -11,22 +11,44 @@
   <h1>YTM Loudness Normalizer</h1>
 
   <div class="section">
-    <label for="targetDb">Target Loudness (dB):</label>
-    <div class="input-group">
-      <input
-              type="range"
-              id="targetDb"
-              min="-60"
-              max="-7"
-              value="-14"
-              step="0.1"
-      />
-      <input type="number" id="targetDbNumber" min="-60" max="-7" value="-14" step="0.1" />
+    <div class="toggle-row">
+      <label for="normalizationEnabled">Enable Audio Normalization</label>
+      <input type="checkbox" id="normalizationEnabled" checked />
     </div>
-    <p class="help-text">Default: -14 dB (Industry standard)</p>
+    <p class="help-text">Turn normalization on/off instantly.</p>
+  </div>
 
-    <div style="display: flex">
-      <button id="saveBtn" class="save-btn" type="button">Save</button>
+  <div class="section">
+    <label for="targetPreset">Normalization Profile:</label>
+    <select id="targetPreset">
+      <option value="aggressive">Aggressive (-7 dB)</option>
+      <option value="loud">Loud (-11 dB)</option>
+      <option value="balanced" selected>Balanced (-14 dB)</option>
+      <option value="quiet">Quiet (-19 dB)</option>
+      <option value="custom">Custom</option>
+    </select>
+    <p class="help-text">Preset changes apply immediately.</p>
+
+    <div id="customTargetSection" class="custom-section hidden">
+      <label for="targetDb">Custom Target Loudness (dB):</label>
+      <div class="input-group">
+        <input
+                type="range"
+                id="targetDb"
+                min="-60"
+                max="-7"
+                value="-14"
+                step="0.1"
+        />
+        <input type="number" id="targetDbNumber" min="-60" max="-7" value="-14" step="0.1" />
+      </div>
+      <p class="help-text">
+        Custom value is staged locally while editing. Click Save to apply.
+      </p>
+
+      <div class="button-row">
+        <button id="saveBtn" class="save-btn" type="button">Save</button>
+      </div>
     </div>
   </div>
 
@@ -34,7 +56,7 @@
     <h3>About</h3>
     <p>
       This extension normalizes audio loudness on YouTube Music to match your preferred
-      loudness level. Adjust the target value above to control how loud the audio plays.
+      loudness level. Use a profile for instant changes or choose Custom for manual control.
     </p>
   </div>
 
